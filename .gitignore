@@ -1,0 +1,2 @@
+# Do not track OSX filesystem journaling file 
+.DS_Store
