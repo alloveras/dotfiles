@@ -1,0 +1,29 @@
+[protocol]
+	version = 2
+
+[user]
+	name = Albert Lloveras
+	email = {{ .email }}
+[core]
+	fsmonitor = true
+	untrackedCache = true
+
+[feature]
+	manyFiles = true
+
+[rebase]
+	autoStash = true
+
+[fetch]
+	prune = true
+	writeCommitGraph = true
+
+[pull]
+	rebase = true
+
+[push]
+	default = current
+
+[alias]
+	rb = !git fetch && git rebase "origin/${1:-master}"
+	co = checkout

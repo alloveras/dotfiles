@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+set -eu -o pipefail
+
+VERSION="2.0.0"
+CURRENT_VERSION="unknown"
+
+SCRATCH_DIR="$(mktemp -d)"
+trap "rm -rf '${SCRATCH_DIR}'" EXIT
+
+# Remove docker (if installed).
+if command -v docker 2>&1 >/dev/null; then
+    sudo apt-get purge --yes --allow-change-held-packages docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
+    sudo rm -rf /var/lib/docker
+    sudo rm -rf /var/lib/containerd
+    sudo rm -f /etc/apt/sources.list.d/docker.list
+    sudo rm -f /etc/apt/keyrings/docker.asc
+fi
+
+# Ensure "uidmap" is installed as it's a requirement for rootless containers.
+if ! command -v newuidmap 2>&1 >/dev/null; then
+    sudo apt-get install --yes --no-install-recommends uidmap
+fi
+
+# Ensure XDG_RUNTIME_DIR is defined.
+if [ -z "${XDG_RUNTIME_DIR+x}" ]; then
+    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+fi
+
+# Ensure CPU, CPUSET and I/O delegation.
+CURRENT_DELEGATIONS="$(cat /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers)"
+if [ "${CURRENT_DELEGATIONS}" != "cpu cpuset io memory pids" ]; then
+    sudo mkdir -p /etc/systemd/system/user@.service.d
+    cat <<EOF | sudo tee 2>&1 >/dev/null /etc/systemd/system/user@.service.d/delegate.conf
+[Service]
+Delegate=cpu cpuset io memory pids
+EOF
+	sudo systemctl daemon-reload
+fi
+
+if command -v nerdctl 2>&1 >/dev/null; then
+    CURRENT_VERSION="$(nerdctl --version | cut -d" " -f3)"
+fi
+
+if [ "${CURRENT_VERSION}" != "${VERSION}" ]; then
+    curl -sSL "https://github.com/containerd/nerdctl/releases/download/v${VERSION}/nerdctl-full-${VERSION}-linux-{{ .chezmoi.arch }}.tar.gz" > "${SCRATCH_DIR}/nerdctl-full-${VERSION}-linux-{{ .chezmoi.arch }}.tar.gz"
+    sudo tar Cxzvvf /usr/local "${SCRATCH_DIR}/nerdctl-full-${VERSION}-linux-{{ .chezmoi.arch }}.tar.gz"
+    containerd-rootless-setuptool.sh install
+fi

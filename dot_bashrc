@@ -1,0 +1,5 @@
+### BASHRC ###
+
+test -f ~/.commonrc && source ~/.commonrc
+
+eval "$(starship init bash)"

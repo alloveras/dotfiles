@@ -1,0 +1,5 @@
+### ZSHRC ###
+
+test ~/.commonrc && source ~/.commonrc
+
+eval "$(starship init zsh)"

@@ -1,0 +1,7 @@
+# MacOS
+.DS_Store
+
+# Thumbnails
+._*
+
+bin/chezmoi
