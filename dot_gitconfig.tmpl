@@ -25,5 +25,7 @@
 	default = current
 
 [alias]
+    clone-branch = "!f() { git fetch origin $1:$1; git checkout $1; }; f"
 	rb = !git fetch && git rebase "origin/${1:-master}"
-	co = checkout
+    co = checkout
+    
